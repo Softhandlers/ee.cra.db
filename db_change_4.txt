@@ -1,0 +1,115 @@
+ -- object recreation
+DROP FUNCTION candidates.fn_get_candidate_list(i_bice_id integer, i_user_id bigint, i_candidate_name varchar, i_from_date text, i_to_date text);
+
+CREATE FUNCTION candidates.fn_get_candidate_list (
+  i_bice_id integer,
+  i_user_id bigint,
+  i_candidate_name varchar,
+  i_from_date text,
+  i_to_date text
+)
+RETURNS TABLE (
+  candidate_id integer,
+  salutation varchar,
+  first_name varchar,
+  middle_name varchar,
+  last_name varchar,
+  bice_id bigint,
+  bice_name varchar,
+  door_no_street varchar,
+  city_id bigint,
+  city_name varchar,
+  state_id bigint,
+  state_name varchar,
+  country_id bigint,
+  country_name varchar,
+  pincode integer,
+  dob text,
+  mobile_number bigint,
+  max_edu varchar,
+  edu_others varchar,
+  id_proof varchar,
+  id_number varchar,
+  id_others varchar,
+  has_bank varchar,
+  bank_name text,
+  bank_id integer,
+  bank_acc_number varchar,
+  created_by varchar,
+  created_on text,
+  bank_image varchar,
+  id_proof_image varchar,
+  candidate_image varchar
+) AS
+$body$
+DECLARE
+
+BEGIN
+  RETURN QUERY
+  SELECT	cd.candidate_id,
+  			cd.salutation,
+            cd.candidate_first_name,
+            cd.candidate_middle_name,
+            cd.candidate_last_name,
+            cd.bice_id,
+            b.bice_name,
+            cd.door_no_street,
+            cd.city_id,
+            ct.city_name,
+            cd.state_id,
+            s.state_name,
+            cd.country_id,
+            c.country_name,
+            cd.pin_code,
+            to_char(cd.date_of_birth::TIMESTAMP,'dd-Mon-yyyy') AS dob,
+            cd.mobile_number,
+            cd.maximum_education,
+            cd.education_others,
+            cd.id_proof,
+            cd.id_number,
+            cd.id_others,
+            cd.has_bank,
+            bk.bank_name,
+            cd.bank_id,
+            cd.bank_account_number,
+            u.name,
+            to_char(cd.created_on,'dd-Mon-yyyy'),
+            cd.bank_image,
+            cd.id_proof_image,
+            cd.candidate_image
+            
+            
+  FROM		candidates.tbl_candidate_details cd
+  LEFT JOIN masters.tbl_bices AS b on b.bice_id=cd.bice_id
+  LEFT JOIN regions.tbl_countries AS c on c.country_id=cd.country_id
+  LEFT JOIN regions.tbl_states as s on s.state_id=cd.state_id
+  LEFT JOIN regions.tbl_cities AS ct on ct.city_id=cd.city_id
+  LEFT JOIN masters.tbl_banks as bk on bk.bank_id=cd.bank_id
+  LEFT JOIN users.tbl_users As u on u.user_id=cd.created_by
+  WHERE		CASE WHEN COALESCE(i_bice_id,0)<>0 THEN
+  				cd.bice_id=i_bice_id
+  			ELSE
+            	1=1
+            END
+  AND		CASE WHEN COALESCE(i_user_id,0)<>0 THEN
+  				cd.created_by=i_user_id
+  			ELSE
+            	1=1
+            END			
+  AND		CASE WHEN COALESCE(i_candidate_name,'')<>'' THEN
+  				concat(cd.candidate_first_name,' ',cd.candidate_middle_name,' ',cd.candidate_last_name) LIKE '%'||i_candidate_name||'%'    
+  			ELSE
+            	1=1
+            END
+  AND		CASE WHEN COALESCE(i_from_date,'')<>'' AND COALESCE(i_to_date,'')<>'' THEN
+  				cd.created_on::Date between i_from_date::DATE AND i_to_date::DATE
+            ELSE
+            	1=1
+            END;
+END;
+$body$
+LANGUAGE 'plpgsql'
+VOLATILE
+CALLED ON NULL INPUT
+SECURITY INVOKER
+COST 100 ROWS 1000;
