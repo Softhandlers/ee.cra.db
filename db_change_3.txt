@@ -1,0 +1,2 @@
+ALTER FUNCTION candidates.fn_get_candidate_list (i_user_id bigint,i_bice_id integer, i_candidate_name varchar, i_from_date text, i_to_date text)
+  RENAME TO fn_get_candidate_list_old;
